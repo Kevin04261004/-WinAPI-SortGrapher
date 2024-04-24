@@ -133,14 +133,14 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="SortGrapher.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <ResourceCompile Include="SortGrapher.rc" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="small.ico" />
     <Image Include="SortGrapher.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="SortGrapher.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
