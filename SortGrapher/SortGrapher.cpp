@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <tchar.h>
 #include <time.h>
+#include <thread>
 #include <assert.h>
 #include "resource.h"
 #include "SortGrapher.h"
@@ -67,11 +68,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 	int screenWidth, screenHeight;
 	static int* data_ptr = nullptr;
-	static bool sorted;
-	static int count;
 	switch (iMsg)
 	{
 	case WM_CREATE:
+	{
 		/* 화면의 크기를 최대화면으로 */
 		screenWidth = GetSystemMetrics(SM_CXSCREEN);
 		screenHeight = GetSystemMetrics(SM_CYSCREEN);
@@ -83,8 +83,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 		/* 데이터 초기화 */
 		mainHWnd = hWnd;
-		count = 0;
-		sorted = false;
 
 		/* 초기값 세팅 및 동적할당*/
 		srand((unsigned)time(NULL));
@@ -95,11 +93,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			data_ptr[i] = rand() % data_size + 1;
 		}
 
-		/* 타이머 세팅 */
-		SetTimer(hWnd, 1, TICKTIME_MS, NULL);
-		SendMessage(hWnd, WM_TIMER, 1, 0);
+		// 새로운 스레드에서 정렬 알고리즘 실행
+		std::thread sortingThread(selectionSort, data_ptr, data_size);
+		sortingThread.detach(); // 스레드를 데타치하여 메인 스레드와 독립적으로 실행
 
 		break;
+	}
 	case WM_DESTROY:
 		/* 동적할당한 데이터들 해제 */
 		if (data_ptr != nullptr)
@@ -128,19 +127,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 		EndPaint(hWnd, &ps);
 		break;
-	case WM_TIMER:
-		if (!sorted)
-		{
-			selectionSort(data_ptr, count, data_size);
-			count++;
-		}
-		InvalidateRect(hWnd, NULL, true);
 	case WM_ERASEBKGND:
 		// 배경을 지우지 않고 처리함
 		return TRUE;
-	case WM_LBUTTONDOWN:
-		sorted = !sorted;
-		break;
 	case WM_SIZE:
 		InvalidateRect(hWnd, NULL, TRUE);
 		break;
@@ -152,4 +141,45 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
+void SortUpdateWindowTick()
+{
+	InvalidateRect(mainHWnd, NULL, true);
+	// UpdateWindow(mainHWnd);
+	// Sleep(1);
+}
 
+void bubbleSort(int* ptr, int maxSize)
+{
+	for (int i = 0; i < maxSize; ++i)
+	{
+		for (int j = i + 1; j < maxSize; ++j)
+		{
+			SortUpdateWindowTick();
+
+			if (ptr[j] < ptr[i])
+			{
+				SWAP(ptr[i], ptr[j]);
+			}
+		}
+	}
+}
+void selectionSort(int* ptr, int maxSize)
+{
+	for (int i = 0; i < maxSize; ++i)
+	{
+		int minIndex = i;
+		for (int j = i + 1; j < maxSize; ++j)
+		{
+			SortUpdateWindowTick();
+
+			if (ptr[j] < ptr[minIndex])
+			{
+				minIndex = j;
+			}
+		}
+		if (minIndex != i)
+		{
+			SWAP(ptr[i], ptr[minIndex]);
+		}
+	}
+}

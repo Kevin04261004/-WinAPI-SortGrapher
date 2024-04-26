@@ -18,35 +18,8 @@ typedef enum data_size
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 
-/* for (int count, count < maxSize; ++count) */
-/* { */
-void bubbleSort(int* ptr, int count, int maxSize)
-{
-	for (int j = count + 1; j < maxSize; ++j)
-	{
-		if (ptr[j] < ptr[count])
-		{
-			SWAP(ptr[count], ptr[j]);
-		}
-	}
-}
-/* } */
+void SortUpdateWindowTick();
 
-/* for (int count, count < maxSize; ++count) */
-/* { */
-void selectionSort(int* ptr, int count, int maxSize)
-{
-	int minIndex = count;
-	for (int j = count + 1; j < maxSize; ++j)
-	{
-		if (ptr[j] < ptr[minIndex])
-		{
-			minIndex = j;
-		}
-	}
-	if (minIndex != count)
-	{
-		SWAP(ptr[count], ptr[minIndex]);
-	}
-}
-/* } */
+void bubbleSort(int* ptr, int maxSize);
+
+void selectionSort(int* ptr, int maxSize);
