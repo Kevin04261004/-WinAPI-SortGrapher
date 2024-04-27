@@ -61,10 +61,44 @@ static long long Big_O_Count = 0;
 static sort_type_t g_sortType;
 static clock_t g_startClock, g_endClock;
 
+COLORREF GetRGB(int count, int maxCount)
+{
+	// 최소값 지정
+	int minCount = 0;
+
+	// 색상 범위 계산
+	double range = maxCount - minCount;
+
+	// 무지개 색상 정의
+	COLORREF rainbowColors[] = {
+		RGB(255, 0, 0),      // 빨강
+		RGB(255, 165, 0),    // 주황
+		RGB(255, 255, 0),    // 노랑
+		RGB(0, 255, 0),      // 초록
+		RGB(0, 0, 255),      // 파랑
+		RGB(75, 0, 130)      // 보라
+	};
+
+	// 범위 내의 비율 계산
+	double percentage = (count - minCount) / range;
+
+	// 현재 색상의 인덱스 계산
+	int colorIndex = (int)(percentage * (sizeof(rainbowColors) / sizeof(rainbowColors[0])));
+
+	// 현재 색상과 다음 색상의 비율 계산
+	double colorRatio = (percentage * (sizeof(rainbowColors) / sizeof(rainbowColors[0]))) - colorIndex;
+
+	// 보간된 RGB 값 계산
+	int red = (int)(GetRValue(rainbowColors[colorIndex]) + colorRatio * (GetRValue(rainbowColors[colorIndex + 1]) - GetRValue(rainbowColors[colorIndex])));
+	int green = (int)(GetGValue(rainbowColors[colorIndex]) + colorRatio * (GetGValue(rainbowColors[colorIndex + 1]) - GetGValue(rainbowColors[colorIndex])));
+	int blue = (int)(GetBValue(rainbowColors[colorIndex]) + colorRatio * (GetBValue(rainbowColors[colorIndex + 1]) - GetBValue(rainbowColors[colorIndex])));
+
+	return RGB(red, green, blue);
+}
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
-	static const COLORREF DOT_RGB = RGB(255, 255, 255);
+	// static const COLORREF DOT_RGB = RGB(255, 255, 255);
 	static const int TICKTIME_MS = 1;
 	
 	static std::thread sortingThread;
@@ -127,28 +161,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			switch (dataSize)
 			{
 			case 100:
-				SetPixel(hMemDC, i * 6, data_ptr[i] * 6, DOT_RGB);
+				SetPixel(hMemDC, i * 6, data_ptr[i] * 6, GetRGB(data_ptr[i], dataSize));
 				break;
 			case 500:
-				SetPixel(hMemDC, i, data_ptr[i], DOT_RGB);
+				SetPixel(hMemDC, i, data_ptr[i], GetRGB(data_ptr[i], dataSize));
 				break;
 			case 1000:
-				SetPixel(hMemDC, i /2, data_ptr[i] / 2, DOT_RGB);
+				SetPixel(hMemDC, i /2, data_ptr[i] / 2, GetRGB(data_ptr[i], dataSize));
 				break;
 			case 3000:
-				SetPixel(hMemDC, i / 4, data_ptr[i] / 4, DOT_RGB);
+				SetPixel(hMemDC, i / 4, data_ptr[i] / 4, GetRGB(data_ptr[i], dataSize));
 				break;
 			case 5000:
-				SetPixel(hMemDC, i / 6, data_ptr[i] / 6, DOT_RGB);
+				SetPixel(hMemDC, i / 6, data_ptr[i] / 6, GetRGB(data_ptr[i], dataSize));
 				break;
 			case 10000:
-				SetPixel(hMemDC, i / 11, data_ptr[i] / 11, DOT_RGB);
+				SetPixel(hMemDC, i / 11, data_ptr[i] / 11, GetRGB(data_ptr[i], dataSize));
 				break;
 			case 50000:
-				SetPixel(hMemDC, i / 40, data_ptr[i] / 35, DOT_RGB);
+				SetPixel(hMemDC, i / 40, data_ptr[i] / 35, GetRGB(data_ptr[i], dataSize));
 				break;
 			default:
-				SetPixel(hMemDC, i, data_ptr[i], DOT_RGB);
+				SetPixel(hMemDC, i, data_ptr[i], GetRGB(data_ptr[i], dataSize));
 				break;
 			}
 		}
