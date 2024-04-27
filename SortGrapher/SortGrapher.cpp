@@ -133,7 +133,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		g_hOptionMenu = GetSubMenu(g_hMenu, 1); // 0 번째 메뉴(PopUp) 가져오기
 		EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_START, MF_ENABLED);
 		/* 초기값 세팅 및 동적할당*/
-		srand(4);
 		assert(data_ptr == nullptr);
 		SetRandomDatasIntoArray(data_ptr, dataSize);
 		assert(data_ptr != nullptr);
@@ -253,6 +252,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			SetRandomDatasIntoArray(data_ptr, dataSize);
 			break;
 		case ID_MENU_OPTION_START:
+			SetRandomDatasIntoArray(data_ptr, dataSize);
 			switch (g_sortType)
 			{
 			case SELECTION_SORT:
@@ -331,6 +331,7 @@ void SetRandomDatasIntoArray(int*& ptr, int count)
 {
 	ptr = (int*)realloc(ptr, sizeof(int) * count);
 	assert(ptr != nullptr);
+	srand(10);
 	for (int i = 0; i < count; ++i)
 	{
 		ptr[i] = rand() % count + 1;
@@ -365,6 +366,7 @@ void DataSortStarted()
 	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_3000, MF_DISABLED);
 	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_5000, MF_DISABLED);
 	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_10000, MF_DISABLED);
+	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_50000, MF_DISABLED);
 }
 
 void DataSortFinish(int duration)
@@ -377,7 +379,9 @@ void DataSortFinish(int duration)
 	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_3000, MF_ENABLED);
 	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_5000, MF_ENABLED);
 	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_10000, MF_ENABLED);
+	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_50000, MF_ENABLED);
 	SortGraphMessage(g_sortType, Big_O_Count, duration);
+	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_START, MF_ENABLED);
 }
 
 /* 선택정렬 */
