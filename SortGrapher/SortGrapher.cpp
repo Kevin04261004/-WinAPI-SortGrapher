@@ -10,6 +10,7 @@
 # 출력데이터 : 각 케이스별 정렬된 데이터, 수행시간
 *
 */
+#define _CRT_SECURE_NO_WARNINGS
 #include <Windows.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,21 +54,28 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmd
 	return (int)Message.wParam;
 }
 
+static bool g_isSorting;
+static HMENU g_hMenu;
+static HMENU g_hOptionMenu = NULL;
+static long long Big_O_Count = 0;
+static sort_type_t g_sortType;
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
 	static const COLORREF DOT_RGB = RGB(255, 255, 255);
 	static const int TICKTIME_MS = 1;
 	
-	
+	static std::thread sortingThread;
 	static RECT crt;
 	HDC hdc, hMemDC;
 	PAINTSTRUCT ps;
 	HBITMAP hBitmap, oldBitmap;
 
-	static data_size_t data_size = TEST_INIT;
+	static int dataSize = 100;
 
 	int screenWidth, screenHeight;
 	static int* data_ptr = nullptr;
+
 	switch (iMsg)
 	{
 	case WM_CREATE:
@@ -83,19 +91,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 		/* 데이터 초기화 */
 		mainHWnd = hWnd;
-
+		g_isSorting = false;
+		g_sortType = SELECTION_SORT;
+		g_hMenu = GetMenu(hWnd); // 메뉴 hWnd에서 가져오기
+		g_hOptionMenu = GetSubMenu(g_hMenu, 1); // 0 번째 메뉴(PopUp) 가져오기
+		EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_START, MF_ENABLED);
 		/* 초기값 세팅 및 동적할당*/
-		srand((unsigned)time(NULL));
-		data_ptr = (int*)malloc(sizeof(int) * data_size);
-		assert(data_ptr != NULL);
-		for (int i = 0; i < data_size; ++i)
-		{
-			data_ptr[i] = rand() % data_size + 1;
-		}
-
-		// 새로운 스레드에서 정렬 알고리즘 실행
-		std::thread sortingThread(selectionSort, data_ptr, data_size);
-		sortingThread.detach(); // 스레드를 데타치하여 메인 스레드와 독립적으로 실행
+		srand(4);
+		assert(data_ptr == nullptr);
+		SetRandomDatasIntoArray(data_ptr, dataSize);
+		assert(data_ptr != nullptr);
 
 		break;
 	}
@@ -115,9 +120,35 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 		FillRect(hMemDC, &crt, (HBRUSH)GetStockObject(BLACK_BRUSH));
 
-		for (int i = 0; i < data_size; ++i)
+		for (int i = 0; i < dataSize; ++i)
 		{
-			SetPixel(hMemDC, i, data_ptr[i], DOT_RGB);
+			switch (dataSize)
+			{
+			case 100:
+				SetPixel(hMemDC, i * 6, data_ptr[i] * 6, DOT_RGB);
+				break;
+			case 500:
+				SetPixel(hMemDC, i, data_ptr[i], DOT_RGB);
+				break;
+			case 1000:
+				SetPixel(hMemDC, i /2, data_ptr[i] / 2, DOT_RGB);
+				break;
+			case 3000:
+				SetPixel(hMemDC, i / 4, data_ptr[i] / 4, DOT_RGB);
+				break;
+			case 5000:
+				SetPixel(hMemDC, i / 6, data_ptr[i] / 6, DOT_RGB);
+				break;
+			case 10000:
+				SetPixel(hMemDC, i / 11, data_ptr[i] / 11, DOT_RGB);
+				break;
+			case 50000:
+				SetPixel(hMemDC, i / 40, data_ptr[i] / 35, DOT_RGB);
+				break;
+			default:
+				SetPixel(hMemDC, i, data_ptr[i], DOT_RGB);
+				break;
+			}
 		}
 
 		BitBlt(hdc, 0, 0, crt.right, crt.bottom, hMemDC, 0, 0, SRCCOPY);
@@ -134,6 +165,88 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		InvalidateRect(hWnd, NULL, TRUE);
 		break;
 	case WM_COMMAND:
+		switch (LOWORD(wParam))
+		{
+		case ID_MENU_SORT_SELECTIONSORT:
+			g_sortType = SELECTION_SORT;
+			break;
+		case ID_MENU_SORT_BUBBLESORT:
+			g_sortType = BUBBLE_SORT;
+			break;
+		case ID_MENU_SORT_INSERTIONSORT:
+			g_sortType = INSERTION_SORT;
+			break;
+		case ID_MENU_SORT_MERGESORT:
+			g_sortType = MERGE_SORT;
+			break;
+		case ID_MENU_SORT_QUICKSORT:
+			g_sortType = QUICK_SORT;
+			break;
+		case ID_MENU_SORT_SHELLSORT:
+			g_sortType = SHELL_SORT;
+			break;
+		case ID_MENU_SORT_COUNTINGSORT:
+			g_sortType = COUNTING_SORT;
+			break;
+		case ID_MENU_OPTION_RESET_100:
+			dataSize = 100;
+			SetRandomDatasIntoArray(data_ptr, dataSize);
+			break;
+		case ID_MENU_OPTION_RESET_500:
+			dataSize = 500;
+			SetRandomDatasIntoArray(data_ptr, dataSize);
+			break;
+		case ID_MENU_OPTION_RESET_1000:
+			dataSize = 1000;
+			SetRandomDatasIntoArray(data_ptr, dataSize);
+			break;
+		case ID_MENU_OPTION_RESET_3000:
+			dataSize = 3000;
+			SetRandomDatasIntoArray(data_ptr, dataSize);
+			break;
+		case ID_MENU_OPTION_RESET_5000:
+			dataSize = 5000;
+			SetRandomDatasIntoArray(data_ptr, dataSize);
+			break;
+		case ID_MENU_OPTION_RESET_10000:
+			dataSize = 10000;
+			SetRandomDatasIntoArray(data_ptr, dataSize);
+			break;
+		case ID_MENU_OPTION_RESET_50000:
+			dataSize = 50000;
+			SetRandomDatasIntoArray(data_ptr, dataSize);
+			break;
+		case ID_MENU_OPTION_START:
+			switch (g_sortType)
+			{
+			case SELECTION_SORT:
+				sortingThread = std::thread(selectionSort, data_ptr, dataSize);
+				break;
+			case BUBBLE_SORT:
+				sortingThread = std::thread(bubbleSort, data_ptr, dataSize);
+				break;
+			case INSERTION_SORT:
+				sortingThread = std::thread(insertionSort, data_ptr, dataSize);
+				break;
+			case MERGE_SORT:
+				sortingThread = std::thread(mergeSort, data_ptr, dataSize);
+				break;
+			case QUICK_SORT:
+				sortingThread = std::thread(quickSort, data_ptr, dataSize);
+				break;
+			case SHELL_SORT:
+				sortingThread = std::thread(shellSort, data_ptr, dataSize);
+				break;
+			case COUNTING_SORT:
+				sortingThread = std::thread(countingSort, data_ptr, dataSize);
+				break;
+			default:
+				break;
+			}
+			sortingThread.detach();
+			break;
+		}
+		InvalidateRect(hWnd, NULL, TRUE);
 		break;
 	default:
 		return (DefWindowProc(hWnd, iMsg, wParam, lParam));
@@ -141,45 +254,349 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
+void SortGraphMessage(sort_type_t sortType, long long big_O_Count)
+{
+	const TCHAR* sort_type_str;
+	switch (sortType)
+	{
+	case SELECTION_SORT:
+		sort_type_str = TEXT("Selection Sort");
+		break;
+	case BUBBLE_SORT:
+		sort_type_str = TEXT("Bubble Sort");
+		break;
+	case INSERTION_SORT:
+		sort_type_str = TEXT("Insertion Sort");
+		break;
+	case MERGE_SORT:
+		sort_type_str = TEXT("Merge Sort");
+		break;
+	case QUICK_SORT:
+		sort_type_str = TEXT("Quick Sort");
+		break;
+	case SHELL_SORT:
+		sort_type_str = TEXT("Shell Sort");
+		break;
+	case COUNTING_SORT:
+		sort_type_str = TEXT("Counting Sort");
+		break;
+	default:
+		sort_type_str = TEXT("Unknown Sort");
+		break;
+	}
+	TCHAR msgBuffer[256];
+	_stprintf_s(msgBuffer, TEXT("반복한 횟수: %lld"), big_O_Count - 1);
+
+	MessageBox(mainHWnd, msgBuffer, sort_type_str, MB_OK);
+}
+
+void SetRandomDatasIntoArray(int*& ptr, int count)
+{
+	ptr = (int*)realloc(ptr, sizeof(int) * count);
+	assert(ptr != nullptr);
+	for (int i = 0; i < count; ++i)
+	{
+		ptr[i] = rand() % count + 1;
+	}
+	DataReseted();
+}
+
+/* 이 함수를 사용하여 윈도우 화면을 다시 그리고, 시간 복잡도를 판별하세요. */
 void SortUpdateWindowTick()
 {
 	InvalidateRect(mainHWnd, NULL, true);
+	++Big_O_Count;
 	// UpdateWindow(mainHWnd);
 	// Sleep(1);
 }
 
-void bubbleSort(int* ptr, int maxSize)
+void DataReseted()
 {
-	for (int i = 0; i < maxSize; ++i)
-	{
-		for (int j = i + 1; j < maxSize; ++j)
-		{
-			SortUpdateWindowTick();
-
-			if (ptr[j] < ptr[i])
-			{
-				SWAP(ptr[i], ptr[j]);
-			}
-		}
-	}
+	g_isSorting = false;
+	Big_O_Count = 0;
+	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_START, MF_ENABLED);
 }
+
+void DataSortStarted()
+{
+	g_isSorting = true;
+	Big_O_Count = 0;
+	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_START, MF_DISABLED);
+	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_100, MF_DISABLED);
+	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_500, MF_DISABLED);
+	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_1000, MF_DISABLED);
+	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_3000, MF_DISABLED);
+	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_5000, MF_DISABLED);
+	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_10000, MF_DISABLED);
+}
+
+void DataSortFinish()
+{
+	g_isSorting = false;
+	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_START, MF_DISABLED);
+	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_100, MF_ENABLED);
+	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_500, MF_ENABLED);
+	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_1000, MF_ENABLED);
+	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_3000, MF_ENABLED);
+	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_5000, MF_ENABLED);
+	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_10000, MF_ENABLED);
+	SortGraphMessage(g_sortType, Big_O_Count);
+}
+
+/* 선택정렬 */
 void selectionSort(int* ptr, int maxSize)
 {
+	DataSortStarted();
 	for (int i = 0; i < maxSize; ++i)
 	{
 		int minIndex = i;
 		for (int j = i + 1; j < maxSize; ++j)
 		{
-			SortUpdateWindowTick();
-
 			if (ptr[j] < ptr[minIndex])
 			{
 				minIndex = j;
 			}
+			SortUpdateWindowTick();
 		}
 		if (minIndex != i)
 		{
 			SWAP(ptr[i], ptr[minIndex]);
 		}
 	}
+
+	SortUpdateWindowTick();
+	DataSortFinish();
+}
+
+/* 버블정렬 */
+void bubbleSort(int* ptr, int maxSize)
+{
+	DataSortStarted();
+	for (int i = 0; i < maxSize; ++i)
+	{
+		for (int j = i + 1; j < maxSize; ++j)
+		{
+			if (ptr[j] < ptr[i])
+			{
+				SWAP(ptr[i], ptr[j]);
+			}
+			SortUpdateWindowTick();
+		}
+	}
+
+	SortUpdateWindowTick();
+	DataSortFinish();
+}
+
+/* 삽입정렬 */
+void insertionSort(int* ptr, int maxSize)
+{
+	DataSortStarted();
+	for (int i = 1; i < maxSize; ++i)
+	{
+		int current = i;
+		int pickData = ptr[current];
+		for (; (current > 0) && (ptr[current - 1] > pickData); --current)
+		{
+			ptr[current] = ptr[current - 1];
+			SortUpdateWindowTick();
+		}
+		ptr[current] = pickData;
+	}
+
+	SortUpdateWindowTick();
+	DataSortFinish();
+}
+
+/* 합병정렬 */
+void mergeSortRecursive(int* data, int first, int last, int size);
+void merge(int* data, int f, int m, int l, int size);
+
+void mergeSort(int* ptr, int maxSize)
+{
+	DataSortStarted();
+	mergeSortRecursive(ptr, 0, maxSize - 1, maxSize);
+	SortUpdateWindowTick();
+	DataSortFinish();
+}
+
+void mergeSortRecursive(int* data, int first, int last, int size)
+{
+	if (first < last)
+	{
+		int middle = (first + last) / 2;
+		mergeSortRecursive(data, first, middle, size);
+		mergeSortRecursive(data, middle + 1, last, size);
+		merge(data, first, middle, last, size);
+	}
+}
+
+void merge(int* data, int f, int m, int l, int size)
+{
+	int* sorted = (int*)malloc(sizeof(int) * size);
+	int first1 = f;
+	int last1 = m;
+	int first2 = m + 1;
+	int last2 = l;
+
+	int index = first1;
+	while (first1 <= last1 && first2 <= last2)
+	{
+		if (data[first1] < data[first2])
+		{
+			sorted[index++] = data[first1++];
+		}
+		else
+		{
+			sorted[index++] = data[first2++];
+		}
+		SortUpdateWindowTick();
+	}
+	for (; first1 <= last1; ++first1, ++index)
+	{
+		sorted[index] = data[first1];
+		SortUpdateWindowTick();
+	}
+	for (; first2 <= last2; ++first2, ++index) {
+		sorted[index] = data[first2];
+		SortUpdateWindowTick();
+	}
+	for (index = f; index <= l; ++index) {
+		data[index] = sorted[index];
+		SortUpdateWindowTick();
+	}
+
+	if (sorted != nullptr)
+	{
+		free(sorted);
+	}
+}
+
+/* 퀵정렬 */
+void quickSortRecursive(int* ptr, int low, int high);
+int partition(int* ptr, int low, int high);
+
+void quickSort(int* ptr, int maxSize)
+{
+	DataSortStarted();
+	quickSortRecursive(ptr, 0, maxSize - 1);
+	g_isSorting = true;
+	SortUpdateWindowTick();
+	DataSortFinish();
+}
+
+void quickSortRecursive(int* ptr, int low, int high)
+{
+	int pivotPoint;
+	if (high > low)
+	{
+		pivotPoint = partition(ptr, low, high);
+		quickSortRecursive(ptr, low, pivotPoint - 1);
+		quickSortRecursive(ptr, pivotPoint + 1, high);
+	}
+}
+
+int partition(int* ptr, int low, int high)
+{
+	int pivotItem = ptr[low];
+	int pivotPoint = low;
+	for (int cur = low + 1; cur <= high; ++cur)
+	{
+		if (ptr[cur] < pivotItem)
+		{
+			pivotPoint++;
+			SWAP(ptr[cur], ptr[pivotPoint]);
+		}
+		SortUpdateWindowTick();
+	}
+	SWAP(ptr[low], ptr[pivotPoint]);
+	return pivotPoint;
+}
+
+/* 셸정렬 */
+void shellSort(int* ptr, int maxSize)
+{
+	DataSortStarted();
+	// 셸 정렬에 사용할 간격 시퀀스 배열
+	int gaps[] = { 701, 301, 132, 57, 23, 10, 4, 1 };
+	int numGaps = sizeof(gaps) / sizeof(gaps[0]);
+
+	// 간격 시퀀스 배열을 순회하면서 정렬 수행
+	for (int g = 0; g < numGaps; ++g)
+	{
+		int gap = gaps[g];
+
+		// 삽입 정렬을 해당 간격에 맞게 적용
+		for (int i = gap; i < maxSize; ++i)
+		{
+			int temp = ptr[i];
+			int j;
+			for (j = i; j >= gap && ptr[j - gap] > temp; j -= gap)
+			{
+				ptr[j] = ptr[j - gap];
+				SortUpdateWindowTick();
+			}
+			ptr[j] = temp;
+		}
+	}
+	SortUpdateWindowTick();
+	DataSortFinish();
+}
+
+/* 셈 정렬 */
+void countingSort(int* ptr, int maxSize)
+{
+	DataSortStarted();
+	// 입력 데이터의 최대값 찾기
+	int maxVal = ptr[0];
+	for (int i = 1; i < maxSize; ++i)
+	{
+		if (ptr[i] > maxVal)
+		{
+			maxVal = ptr[i];
+		}
+		SortUpdateWindowTick();
+	}
+
+	// 누적 빈도수 계산을 위한 배열 생성 및 초기화
+	int* count = (int*)calloc(maxVal + 1, sizeof(int));
+
+	// 입력 데이터의 빈도수 세기
+	for (int i = 0; i < maxSize; ++i)
+	{
+		count[ptr[i]]++;
+		SortUpdateWindowTick();
+	}
+
+	// 누적 빈도수 계산
+	for (int i = 1; i <= maxVal; ++i)
+	{
+		count[i] += count[i - 1];
+		SortUpdateWindowTick();
+	}
+
+	// 정렬된 결과를 담을 임시 배열 생성
+	int* sorted = (int*)malloc(sizeof(int) * maxSize);
+
+	// 원래 배열을 순회하면서 정렬된 결과를 임시 배열에 저장
+	for (int i = maxSize - 1; i >= 0; --i)
+	{
+		sorted[count[ptr[i]] - 1] = ptr[i];
+		count[ptr[i]]--;
+		SortUpdateWindowTick();
+	}
+
+	// 임시 배열의 내용을 원래 배열에 복사
+	for (int i = 0; i < maxSize; ++i)
+	{
+		ptr[i] = sorted[i];
+		SortUpdateWindowTick();
+	}
+
+	// 동적 할당한 메모리 해제
+	free(count);
+	free(sorted);
+
+	SortUpdateWindowTick();
+	DataSortFinish();
 }

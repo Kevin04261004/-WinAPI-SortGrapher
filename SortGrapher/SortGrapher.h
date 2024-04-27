@@ -7,19 +7,41 @@
 	(first) = (second); \
 	(second) = temp;
 
-
-typedef enum data_size
+typedef enum sort_type
 {
-	TEST1 = 3000,
-	TEST2 = 5000,
-	TEST3 = 10000,
-	TEST_INIT = 500,
-} data_size_t;
+	SELECTION_SORT,
+	BUBBLE_SORT,
+	INSERTION_SORT,
+	MERGE_SORT,
+	QUICK_SORT,
+	SHELL_SORT,
+	COUNTING_SORT,
+} sort_type_t;
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 
+void SortGraphMessage(sort_type_t sortType, long long big_O_Count);
+
 void SortUpdateWindowTick();
+
+void DataReseted();
+
+void DataSortStarted();
+
+void DataSortFinish();
+
+void SetRandomDatasIntoArray(int*& ptr, int count);
+
+void selectionSort(int* ptr, int maxSize);
 
 void bubbleSort(int* ptr, int maxSize);
 
-void selectionSort(int* ptr, int maxSize);
+void insertionSort(int* ptr, int maxSize);
+
+void mergeSort(int* ptr, int maxSize);
+
+void quickSort(int* ptr, int maxSize);
+
+void shellSort(int* ptr, int maxSize);
+
+void countingSort(int* ptr, int maxSize);

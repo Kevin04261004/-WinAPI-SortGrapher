@@ -21,6 +21,17 @@
 #define ID_MENU_OPTION_RESET_3000       32781
 #define ID_MENU_OPTION_RESET_5000       32782
 #define ID_MENU_OPTION_RESET_10000      32783
+#define ID_MENU_SORT_SELECTIONSORT      32793
+#define ID_MENU_SORT_INSERTIONSORT      32794
+#define ID_MENU_SORT_MERGESORT          32795
+#define ID_MENU_SORT_QUICKSORT          32796
+#define ID_MENU_SORT_COUNTINGSORT       32797
+#define ID_MENU_SORT_SHELLSORT          32798
+#define ID_MENU_OPTION_RESET_100        32799
+#define ID_MENU_OPTION_RESET_500        32800
+#define ID_MENU_OPTION_RESET_1000       32801
+#define ID_32802                        32802
+#define ID_MENU_OPTION_RESET_50000      32803
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -29,7 +40,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        130
-#define _APS_NEXT_COMMAND_VALUE         32784
+#define _APS_NEXT_COMMAND_VALUE         32804
 #define _APS_NEXT_CONTROL_VALUE         1000
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
