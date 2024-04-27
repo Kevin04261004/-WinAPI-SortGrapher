@@ -20,7 +20,7 @@ typedef enum sort_type
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 
-void SortGraphMessage(sort_type_t sortType, long long big_O_Count);
+void SortGraphMessage(sort_type_t sortType, long long big_O_Count, int duration_ms);
 
 void SortUpdateWindowTick();
 
@@ -28,7 +28,7 @@ void DataReseted();
 
 void DataSortStarted();
 
-void DataSortFinish();
+void DataSortFinish(int duration);
 
 void SetRandomDatasIntoArray(int*& ptr, int count);
 

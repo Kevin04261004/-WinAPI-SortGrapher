@@ -59,6 +59,8 @@ static HMENU g_hMenu;
 static HMENU g_hOptionMenu = NULL;
 static long long Big_O_Count = 0;
 static sort_type_t g_sortType;
+static clock_t g_startClock, g_endClock;
+
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -254,7 +256,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-void SortGraphMessage(sort_type_t sortType, long long big_O_Count)
+void SortGraphMessage(sort_type_t sortType, long long big_O_Count, int duration_ms)
 {
 	const TCHAR* sort_type_str;
 	switch (sortType)
@@ -285,7 +287,8 @@ void SortGraphMessage(sort_type_t sortType, long long big_O_Count)
 		break;
 	}
 	TCHAR msgBuffer[256];
-	_stprintf_s(msgBuffer, TEXT("반복한 횟수: %lld"), big_O_Count - 1);
+	double duration = duration_ms / (double)CLOCKS_PER_SEC;
+	_stprintf_s(msgBuffer, TEXT("반복한 횟수: %lld(번), 걸린 시간: %.3f(sec)"), big_O_Count - 1, duration);
 
 	MessageBox(mainHWnd, msgBuffer, sort_type_str, MB_OK);
 }
@@ -330,7 +333,7 @@ void DataSortStarted()
 	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_10000, MF_DISABLED);
 }
 
-void DataSortFinish()
+void DataSortFinish(int duration)
 {
 	g_isSorting = false;
 	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_START, MF_DISABLED);
@@ -340,72 +343,84 @@ void DataSortFinish()
 	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_3000, MF_ENABLED);
 	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_5000, MF_ENABLED);
 	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_10000, MF_ENABLED);
-	SortGraphMessage(g_sortType, Big_O_Count);
+	SortGraphMessage(g_sortType, Big_O_Count, duration);
 }
 
 /* 선택정렬 */
 void selectionSort(int* ptr, int maxSize)
 {
 	DataSortStarted();
-	for (int i = 0; i < maxSize; ++i)
+	g_startClock = clock();
 	{
-		int minIndex = i;
-		for (int j = i + 1; j < maxSize; ++j)
+		for (int i = 0; i < maxSize; ++i)
 		{
-			if (ptr[j] < ptr[minIndex])
+			int minIndex = i;
+			for (int j = i + 1; j < maxSize; ++j)
 			{
-				minIndex = j;
+				if (ptr[j] < ptr[minIndex])
+				{
+					minIndex = j;
+				}
+				SortUpdateWindowTick();
 			}
-			SortUpdateWindowTick();
+			if (minIndex != i)
+			{
+				SWAP(ptr[i], ptr[minIndex]);
+			}
 		}
-		if (minIndex != i)
-		{
-			SWAP(ptr[i], ptr[minIndex]);
-		}
+		SortUpdateWindowTick();
 	}
-
-	SortUpdateWindowTick();
-	DataSortFinish();
+	g_endClock = clock();
+	double duration = g_endClock - g_startClock;
+	DataSortFinish(duration);
 }
 
 /* 버블정렬 */
 void bubbleSort(int* ptr, int maxSize)
 {
 	DataSortStarted();
-	for (int i = 0; i < maxSize; ++i)
+	g_startClock = clock();
 	{
-		for (int j = i + 1; j < maxSize; ++j)
+		for (int i = 0; i < maxSize; ++i)
 		{
-			if (ptr[j] < ptr[i])
+			for (int j = i + 1; j < maxSize; ++j)
 			{
-				SWAP(ptr[i], ptr[j]);
+				if (ptr[j] < ptr[i])
+				{
+					SWAP(ptr[i], ptr[j]);
+				}
+				SortUpdateWindowTick();
 			}
-			SortUpdateWindowTick();
 		}
+		SortUpdateWindowTick();
 	}
-
-	SortUpdateWindowTick();
-	DataSortFinish();
+	g_endClock = clock();
+	double duration = g_endClock - g_startClock;
+	DataSortFinish(duration);
 }
 
 /* 삽입정렬 */
 void insertionSort(int* ptr, int maxSize)
 {
 	DataSortStarted();
-	for (int i = 1; i < maxSize; ++i)
+	g_startClock = clock();
 	{
-		int current = i;
-		int pickData = ptr[current];
-		for (; (current > 0) && (ptr[current - 1] > pickData); --current)
+		for (int i = 1; i < maxSize; ++i)
 		{
-			ptr[current] = ptr[current - 1];
-			SortUpdateWindowTick();
+			int current = i;
+			int pickData = ptr[current];
+			for (; (current > 0) && (ptr[current - 1] > pickData); --current)
+			{
+				ptr[current] = ptr[current - 1];
+				SortUpdateWindowTick();
+			}
+			ptr[current] = pickData;
 		}
-		ptr[current] = pickData;
+		SortUpdateWindowTick();
 	}
-
-	SortUpdateWindowTick();
-	DataSortFinish();
+	g_endClock = clock();
+	double duration = g_endClock - g_startClock;
+	DataSortFinish(duration);
 }
 
 /* 합병정렬 */
@@ -415,9 +430,14 @@ void merge(int* data, int f, int m, int l, int size);
 void mergeSort(int* ptr, int maxSize)
 {
 	DataSortStarted();
-	mergeSortRecursive(ptr, 0, maxSize - 1, maxSize);
-	SortUpdateWindowTick();
-	DataSortFinish();
+	g_startClock = clock();
+	{
+		mergeSortRecursive(ptr, 0, maxSize - 1, maxSize);
+		SortUpdateWindowTick();
+	}
+	g_endClock = clock();
+	double duration = g_endClock - g_startClock;
+	DataSortFinish(duration);
 }
 
 void mergeSortRecursive(int* data, int first, int last, int size)
@@ -479,10 +499,15 @@ int partition(int* ptr, int low, int high);
 void quickSort(int* ptr, int maxSize)
 {
 	DataSortStarted();
-	quickSortRecursive(ptr, 0, maxSize - 1);
-	g_isSorting = true;
-	SortUpdateWindowTick();
-	DataSortFinish();
+	g_startClock = clock();
+	{
+		quickSortRecursive(ptr, 0, maxSize - 1);
+		g_isSorting = true;
+		SortUpdateWindowTick();
+	}
+	g_endClock = clock();
+	double duration = g_endClock - g_startClock;
+	DataSortFinish(duration);
 }
 
 void quickSortRecursive(int* ptr, int low, int high)
@@ -517,86 +542,96 @@ int partition(int* ptr, int low, int high)
 void shellSort(int* ptr, int maxSize)
 {
 	DataSortStarted();
-	// 셸 정렬에 사용할 간격 시퀀스 배열
-	int gaps[] = { 701, 301, 132, 57, 23, 10, 4, 1 };
-	int numGaps = sizeof(gaps) / sizeof(gaps[0]);
-
-	// 간격 시퀀스 배열을 순회하면서 정렬 수행
-	for (int g = 0; g < numGaps; ++g)
+	g_startClock = clock();
 	{
-		int gap = gaps[g];
+		// 셸 정렬에 사용할 간격 시퀀스 배열
+		int gaps[] = { 701, 301, 132, 57, 23, 10, 4, 1 };
+		int numGaps = sizeof(gaps) / sizeof(gaps[0]);
 
-		// 삽입 정렬을 해당 간격에 맞게 적용
-		for (int i = gap; i < maxSize; ++i)
+		// 간격 시퀀스 배열을 순회하면서 정렬 수행
+		for (int g = 0; g < numGaps; ++g)
 		{
-			int temp = ptr[i];
-			int j;
-			for (j = i; j >= gap && ptr[j - gap] > temp; j -= gap)
+			int gap = gaps[g];
+
+			// 삽입 정렬을 해당 간격에 맞게 적용
+			for (int i = gap; i < maxSize; ++i)
 			{
-				ptr[j] = ptr[j - gap];
-				SortUpdateWindowTick();
+				int temp = ptr[i];
+				int j;
+				for (j = i; j >= gap && ptr[j - gap] > temp; j -= gap)
+				{
+					ptr[j] = ptr[j - gap];
+					SortUpdateWindowTick();
+				}
+				ptr[j] = temp;
 			}
-			ptr[j] = temp;
 		}
+		SortUpdateWindowTick();
 	}
-	SortUpdateWindowTick();
-	DataSortFinish();
+	g_endClock = clock();
+	double duration = g_endClock - g_startClock;
+	DataSortFinish(duration);
 }
 
 /* 셈 정렬 */
 void countingSort(int* ptr, int maxSize)
 {
 	DataSortStarted();
-	// 입력 데이터의 최대값 찾기
-	int maxVal = ptr[0];
-	for (int i = 1; i < maxSize; ++i)
+	g_startClock = clock();
 	{
-		if (ptr[i] > maxVal)
+		// 입력 데이터의 최대값 찾기
+		int maxVal = ptr[0];
+		for (int i = 1; i < maxSize; ++i)
 		{
-			maxVal = ptr[i];
+			if (ptr[i] > maxVal)
+			{
+				maxVal = ptr[i];
+			}
+			SortUpdateWindowTick();
 		}
+
+		// 누적 빈도수 계산을 위한 배열 생성 및 초기화
+		int* count = (int*)calloc(maxVal + 1, sizeof(int));
+
+		// 입력 데이터의 빈도수 세기
+		for (int i = 0; i < maxSize; ++i)
+		{
+			count[ptr[i]]++;
+			SortUpdateWindowTick();
+		}
+
+		// 누적 빈도수 계산
+		for (int i = 1; i <= maxVal; ++i)
+		{
+			count[i] += count[i - 1];
+			SortUpdateWindowTick();
+		}
+
+		// 정렬된 결과를 담을 임시 배열 생성
+		int* sorted = (int*)malloc(sizeof(int) * maxSize);
+
+		// 원래 배열을 순회하면서 정렬된 결과를 임시 배열에 저장
+		for (int i = maxSize - 1; i >= 0; --i)
+		{
+			sorted[count[ptr[i]] - 1] = ptr[i];
+			count[ptr[i]]--;
+			SortUpdateWindowTick();
+		}
+
+		// 임시 배열의 내용을 원래 배열에 복사
+		for (int i = 0; i < maxSize; ++i)
+		{
+			ptr[i] = sorted[i];
+			SortUpdateWindowTick();
+		}
+
+		// 동적 할당한 메모리 해제
+		free(count);
+		free(sorted);
+
 		SortUpdateWindowTick();
 	}
-
-	// 누적 빈도수 계산을 위한 배열 생성 및 초기화
-	int* count = (int*)calloc(maxVal + 1, sizeof(int));
-
-	// 입력 데이터의 빈도수 세기
-	for (int i = 0; i < maxSize; ++i)
-	{
-		count[ptr[i]]++;
-		SortUpdateWindowTick();
-	}
-
-	// 누적 빈도수 계산
-	for (int i = 1; i <= maxVal; ++i)
-	{
-		count[i] += count[i - 1];
-		SortUpdateWindowTick();
-	}
-
-	// 정렬된 결과를 담을 임시 배열 생성
-	int* sorted = (int*)malloc(sizeof(int) * maxSize);
-
-	// 원래 배열을 순회하면서 정렬된 결과를 임시 배열에 저장
-	for (int i = maxSize - 1; i >= 0; --i)
-	{
-		sorted[count[ptr[i]] - 1] = ptr[i];
-		count[ptr[i]]--;
-		SortUpdateWindowTick();
-	}
-
-	// 임시 배열의 내용을 원래 배열에 복사
-	for (int i = 0; i < maxSize; ++i)
-	{
-		ptr[i] = sorted[i];
-		SortUpdateWindowTick();
-	}
-
-	// 동적 할당한 메모리 해제
-	free(count);
-	free(sorted);
-
-	SortUpdateWindowTick();
-	DataSortFinish();
+	g_endClock = clock();
+	double duration = g_endClock - g_startClock;
+	DataSortFinish(duration);
 }
