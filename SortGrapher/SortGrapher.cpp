@@ -54,7 +54,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmd
 	return (int)Message.wParam;
 }
 
-static bool g_isSorting;
 static HMENU g_hMenu;
 static HMENU g_hOptionMenu = NULL;
 static long long Big_O_Count = 0;
@@ -108,7 +107,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	HBITMAP hBitmap, oldBitmap;
 
 	static int dataSize = 100;
-
+	static bool orderByASC;
 	int screenWidth, screenHeight;
 	static int* data_ptr = nullptr;
 
@@ -127,7 +126,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
 		/* 데이터 초기화 */
 		mainHWnd = hWnd;
-		g_isSorting = false;
+		orderByASC = false;
 		g_sortType = SELECTION_SORT;
 		g_hMenu = GetMenu(hWnd); // 메뉴 hWnd에서 가져오기
 		g_hOptionMenu = GetSubMenu(g_hMenu, 1); // 0 번째 메뉴(PopUp) 가져오기
@@ -256,30 +255,36 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			switch (g_sortType)
 			{
 			case SELECTION_SORT:
-				sortingThread = std::thread(selectionSort, data_ptr, dataSize);
+				sortingThread = std::thread(selectionSort, data_ptr, dataSize, orderByASC);
 				break;
 			case BUBBLE_SORT:
-				sortingThread = std::thread(bubbleSort, data_ptr, dataSize);
+				sortingThread = std::thread(bubbleSort, data_ptr, dataSize, orderByASC);
 				break;
 			case INSERTION_SORT:
-				sortingThread = std::thread(insertionSort, data_ptr, dataSize);
+				sortingThread = std::thread(insertionSort, data_ptr, dataSize, orderByASC);
 				break;
 			case MERGE_SORT:
-				sortingThread = std::thread(mergeSort, data_ptr, dataSize);
+				sortingThread = std::thread(mergeSort, data_ptr, dataSize, orderByASC);
 				break;
 			case QUICK_SORT:
-				sortingThread = std::thread(quickSort, data_ptr, dataSize);
+				sortingThread = std::thread(quickSort, data_ptr, dataSize, orderByASC);
 				break;
 			case SHELL_SORT:
-				sortingThread = std::thread(shellSort, data_ptr, dataSize);
+				sortingThread = std::thread(shellSort, data_ptr, dataSize, orderByASC);
 				break;
 			case COUNTING_SORT:
-				sortingThread = std::thread(countingSort, data_ptr, dataSize);
+				sortingThread = std::thread(countingSort, data_ptr, dataSize, orderByASC);
 				break;
 			default:
 				break;
 			}
 			sortingThread.detach();
+			break;
+		case ID_MENU_OPTION_ORDERBY_ASC:
+			orderByASC = true;
+			break;
+		case ID_MENU_OPTION_ORDERBY_DESC:
+			orderByASC = false;
 			break;
 		}
 		InvalidateRect(hWnd, NULL, TRUE);
@@ -350,14 +355,12 @@ void SortUpdateWindowTick()
 
 void DataReseted()
 {
-	g_isSorting = false;
 	Big_O_Count = 0;
 	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_START, MF_ENABLED);
 }
 
 void DataSortStarted()
 {
-	g_isSorting = true;
 	Big_O_Count = 0;
 	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_START, MF_DISABLED);
 	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_100, MF_DISABLED);
@@ -371,7 +374,6 @@ void DataSortStarted()
 
 void DataSortFinish(int duration)
 {
-	g_isSorting = false;
 	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_START, MF_DISABLED);
 	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_100, MF_ENABLED);
 	EnableMenuItem(g_hOptionMenu, ID_MENU_OPTION_RESET_500, MF_ENABLED);
@@ -385,25 +387,47 @@ void DataSortFinish(int duration)
 }
 
 /* 선택정렬 */
-void selectionSort(int* ptr, int maxSize)
+void selectionSort(int* ptr, int maxSize, bool orderByASC)
 {
 	DataSortStarted();
 	g_startClock = clock();
 	{
-		for (int i = 0; i < maxSize; ++i)
+		if (orderByASC)
 		{
-			int minIndex = i;
-			for (int j = i + 1; j < maxSize; ++j)
+			for (int i = 0; i < maxSize; ++i)
 			{
-				if (ptr[j] < ptr[minIndex])
+				int minIndex = i;
+				for (int j = i + 1; j < maxSize; ++j)
 				{
-					minIndex = j;
+					if (ptr[j] < ptr[minIndex])
+					{
+						minIndex = j;
+					}
+					SortUpdateWindowTick();
 				}
-				SortUpdateWindowTick();
+				if (minIndex != i)
+				{
+					SWAP(ptr[i], ptr[minIndex]);
+				}
 			}
-			if (minIndex != i)
+		}
+		else
+		{
+			for (int i = 0; i < maxSize; ++i)
 			{
-				SWAP(ptr[i], ptr[minIndex]);
+				int maxIndex = i;
+				for (int j = i + 1; j < maxSize; ++j)
+				{
+					if (ptr[j] > ptr[maxIndex])
+					{
+						maxIndex = j;
+					}
+					SortUpdateWindowTick();
+				}
+				if (maxIndex != i)
+				{
+					SWAP(ptr[i], ptr[maxIndex]);
+				}
 			}
 		}
 		SortUpdateWindowTick();
@@ -414,20 +438,37 @@ void selectionSort(int* ptr, int maxSize)
 }
 
 /* 버블정렬 */
-void bubbleSort(int* ptr, int maxSize)
+void bubbleSort(int* ptr, int maxSize, bool orderByASC)
 {
 	DataSortStarted();
 	g_startClock = clock();
 	{
-		for (int i = 0; i < maxSize; ++i)
+		if (orderByASC)
 		{
-			for (int j = i + 1; j < maxSize; ++j)
+			for (int i = 0; i < maxSize; ++i)
 			{
-				if (ptr[j] < ptr[i])
+				for (int j = i + 1; j < maxSize; ++j)
 				{
-					SWAP(ptr[i], ptr[j]);
+					if (ptr[j] < ptr[i])
+					{
+						SWAP(ptr[i], ptr[j]);
+					}
+					SortUpdateWindowTick();
 				}
-				SortUpdateWindowTick();
+			}
+		}
+		else
+		{
+			for (int i = 0; i < maxSize; ++i)
+			{
+				for (int j = i + 1; j < maxSize; ++j)
+				{
+					if (ptr[j] > ptr[i])
+					{
+						SWAP(ptr[i], ptr[j]);
+					}
+					SortUpdateWindowTick();
+				}
 			}
 		}
 		SortUpdateWindowTick();
@@ -438,21 +479,38 @@ void bubbleSort(int* ptr, int maxSize)
 }
 
 /* 삽입정렬 */
-void insertionSort(int* ptr, int maxSize)
+void insertionSort(int* ptr, int maxSize, bool orderByASC)
 {
 	DataSortStarted();
 	g_startClock = clock();
 	{
-		for (int i = 1; i < maxSize; ++i)
+		if (orderByASC)
 		{
-			int current = i;
-			int pickData = ptr[current];
-			for (; (current > 0) && (ptr[current - 1] > pickData); --current)
+			for (int i = 1; i < maxSize; ++i)
 			{
-				ptr[current] = ptr[current - 1];
-				SortUpdateWindowTick();
+				int current = i;
+				int pickData = ptr[current];
+				for (; (current > 0) && (ptr[current - 1] > pickData); --current)
+				{
+					ptr[current] = ptr[current - 1];
+					SortUpdateWindowTick();
+				}
+				ptr[current] = pickData;
 			}
-			ptr[current] = pickData;
+		}
+		else
+		{
+			for (int i = 1; i < maxSize; ++i)
+			{
+				int current = i;
+				int pickData = ptr[current];
+				for (; (current > 0) && (ptr[current - 1] < pickData); --current)
+				{
+					ptr[current] = ptr[current - 1];
+					SortUpdateWindowTick();
+				}
+				ptr[current] = pickData;
+			}
 		}
 		SortUpdateWindowTick();
 	}
@@ -462,15 +520,15 @@ void insertionSort(int* ptr, int maxSize)
 }
 
 /* 합병정렬 */
-void mergeSortRecursive(int* data, int first, int last, int size);
-void merge(int* data, int f, int m, int l, int size);
+void mergeSortRecursive(int* data, int first, int last, int size, bool orderByASC);
+void merge(int* data, int f, int m, int l, int size, bool orderByASC);
 
-void mergeSort(int* ptr, int maxSize)
+void mergeSort(int* ptr, int maxSize, bool orderByASC)
 {
 	DataSortStarted();
 	g_startClock = clock();
 	{
-		mergeSortRecursive(ptr, 0, maxSize - 1, maxSize);
+		mergeSortRecursive(ptr, 0, maxSize - 1, maxSize, orderByASC);
 		SortUpdateWindowTick();
 	}
 	g_endClock = clock();
@@ -478,18 +536,18 @@ void mergeSort(int* ptr, int maxSize)
 	DataSortFinish(duration);
 }
 
-void mergeSortRecursive(int* data, int first, int last, int size)
+void mergeSortRecursive(int* data, int first, int last, int size, bool orderByASC)
 {
 	if (first < last)
 	{
 		int middle = (first + last) / 2;
-		mergeSortRecursive(data, first, middle, size);
-		mergeSortRecursive(data, middle + 1, last, size);
-		merge(data, first, middle, last, size);
+		mergeSortRecursive(data, first, middle, size, orderByASC);
+		mergeSortRecursive(data, middle + 1, last, size, orderByASC);
+		merge(data, first, middle, last, size, orderByASC);
 	}
 }
 
-void merge(int* data, int f, int m, int l, int size)
+void merge(int* data, int f, int m, int l, int size, bool orderByASC)
 {
 	int* sorted = (int*)malloc(sizeof(int) * size);
 	int first1 = f;
@@ -498,17 +556,35 @@ void merge(int* data, int f, int m, int l, int size)
 	int last2 = l;
 
 	int index = first1;
-	while (first1 <= last1 && first2 <= last2)
+	if (orderByASC)
 	{
-		if (data[first1] < data[first2])
+		while (first1 <= last1 && first2 <= last2)
 		{
-			sorted[index++] = data[first1++];
+			if (data[first1] < data[first2])
+			{
+				sorted[index++] = data[first1++];
+			}
+			else
+			{
+				sorted[index++] = data[first2++];
+			}
+			SortUpdateWindowTick();
 		}
-		else
+	}
+	else
+	{
+		while (first1 <= last1 && first2 <= last2)
 		{
-			sorted[index++] = data[first2++];
+			if (data[first1] >= data[first2])
+			{
+				sorted[index++] = data[first1++];
+			}
+			else
+			{
+				sorted[index++] = data[first2++];
+			}
+			SortUpdateWindowTick();
 		}
-		SortUpdateWindowTick();
 	}
 	for (; first1 <= last1; ++first1, ++index)
 	{
@@ -531,16 +607,15 @@ void merge(int* data, int f, int m, int l, int size)
 }
 
 /* 퀵정렬 */
-void quickSortRecursive(int* ptr, int low, int high);
-int partition(int* ptr, int low, int high);
+void quickSortRecursive(int* ptr, int low, int high, bool orderByASC);
+int partition(int* ptr, int low, int high, bool orderByASC);
 
-void quickSort(int* ptr, int maxSize)
+void quickSort(int* ptr, int maxSize, bool orderByASC)
 {
 	DataSortStarted();
 	g_startClock = clock();
 	{
-		quickSortRecursive(ptr, 0, maxSize - 1);
-		g_isSorting = true;
+		quickSortRecursive(ptr, 0, maxSize - 1, orderByASC);
 		SortUpdateWindowTick();
 	}
 	g_endClock = clock();
@@ -548,60 +623,107 @@ void quickSort(int* ptr, int maxSize)
 	DataSortFinish(duration);
 }
 
-void quickSortRecursive(int* ptr, int low, int high)
+void quickSortRecursive(int* ptr, int low, int high, bool orderByASC)
 {
 	int pivotPoint;
 	if (high > low)
 	{
-		pivotPoint = partition(ptr, low, high);
-		quickSortRecursive(ptr, low, pivotPoint - 1);
-		quickSortRecursive(ptr, pivotPoint + 1, high);
+		pivotPoint = partition(ptr, low, high, orderByASC);
+		quickSortRecursive(ptr, low, pivotPoint - 1, orderByASC);
+		quickSortRecursive(ptr, pivotPoint + 1, high, orderByASC);
 	}
 }
 
-int partition(int* ptr, int low, int high)
+int partition(int* ptr, int low, int high, bool orderByASC)
 {
-	int pivotItem = ptr[low];
-	int pivotPoint = low;
-	for (int cur = low + 1; cur <= high; ++cur)
+	int pivotPoint;
+	if (orderByASC)
 	{
-		if (ptr[cur] < pivotItem)
+		int pivotItem = ptr[low];
+		pivotPoint = low;
+		for (int cur = low + 1; cur <= high; ++cur)
 		{
-			pivotPoint++;
-			SWAP(ptr[cur], ptr[pivotPoint]);
+			if (ptr[cur] < pivotItem)
+			{
+				pivotPoint++;
+				SWAP(ptr[cur], ptr[pivotPoint]);
+			}
+			SortUpdateWindowTick();
 		}
-		SortUpdateWindowTick();
+		SWAP(ptr[low], ptr[pivotPoint]);
 	}
-	SWAP(ptr[low], ptr[pivotPoint]);
+	else
+	{
+		int pivotItem = ptr[low];
+		pivotPoint = low;
+		for (int cur = low + 1; cur <= high; ++cur)
+		{
+			if (ptr[cur] > pivotItem)
+			{
+				pivotPoint++;
+				SWAP(ptr[cur], ptr[pivotPoint]);
+			}
+			SortUpdateWindowTick();
+		}
+		SWAP(ptr[low], ptr[pivotPoint]);
+	}
 	return pivotPoint;
 }
 
 /* 셸정렬 */
-void shellSort(int* ptr, int maxSize)
+void shellSort(int* ptr, int maxSize, bool orderByASC)
 {
 	DataSortStarted();
 	g_startClock = clock();
 	{
-		// 셸 정렬에 사용할 간격 시퀀스 배열
-		int gaps[] = { 701, 301, 132, 57, 23, 10, 4, 1 };
-		int numGaps = sizeof(gaps) / sizeof(gaps[0]);
-
-		// 간격 시퀀스 배열을 순회하면서 정렬 수행
-		for (int g = 0; g < numGaps; ++g)
+		if (orderByASC)
 		{
-			int gap = gaps[g];
+			// 셸 정렬에 사용할 간격 시퀀스 배열
+			int gaps[] = { 701, 301, 132, 57, 23, 10, 4, 1 };
+			int numGaps = sizeof(gaps) / sizeof(gaps[0]);
 
-			// 삽입 정렬을 해당 간격에 맞게 적용
-			for (int i = gap; i < maxSize; ++i)
+			// 간격 시퀀스 배열을 순회하면서 정렬 수행
+			for (int g = 0; g < numGaps; ++g)
 			{
-				int temp = ptr[i];
-				int j;
-				for (j = i; j >= gap && ptr[j - gap] > temp; j -= gap)
+				int gap = gaps[g];
+
+				// 삽입 정렬을 해당 간격에 맞게 적용
+				for (int i = gap; i < maxSize; ++i)
 				{
-					ptr[j] = ptr[j - gap];
-					SortUpdateWindowTick();
+					int temp = ptr[i];
+					int j;
+					for (j = i; j >= gap && ptr[j - gap] > temp; j -= gap)
+					{
+						ptr[j] = ptr[j - gap];
+						SortUpdateWindowTick();
+					}
+					ptr[j] = temp;
 				}
-				ptr[j] = temp;
+			}
+		}
+		else
+		{
+			// 셸 정렬에 사용할 간격 시퀀스 배열
+			int gaps[] = { 701, 301, 132, 57, 23, 10, 4, 1 };
+			int numGaps = sizeof(gaps) / sizeof(gaps[0]);
+
+			// 간격 시퀀스 배열을 순회하면서 정렬 수행
+			for (int g = 0; g < numGaps; ++g)
+			{
+				int gap = gaps[g];
+
+				// 삽입 정렬을 해당 간격에 맞게 적용
+				for (int i = gap; i < maxSize; ++i)
+				{
+					int temp = ptr[i];
+					int j;
+					for (j = i; j >= gap && ptr[j - gap] < temp; j -= gap)
+					{
+						ptr[j] = ptr[j - gap];
+						SortUpdateWindowTick();
+					}
+					ptr[j] = temp;
+				}
 			}
 		}
 		SortUpdateWindowTick();
@@ -612,7 +734,7 @@ void shellSort(int* ptr, int maxSize)
 }
 
 /* 셈 정렬 */
-void countingSort(int* ptr, int maxSize)
+void countingSort(int* ptr, int maxSize, bool orderByASC)
 {
 	DataSortStarted();
 	g_startClock = clock();
@@ -637,36 +759,49 @@ void countingSort(int* ptr, int maxSize)
 			count[ptr[i]]++;
 			SortUpdateWindowTick();
 		}
-
-		// 누적 빈도수 계산
-		for (int i = 1; i <= maxVal; ++i)
-		{
-			count[i] += count[i - 1];
-			SortUpdateWindowTick();
-		}
-
-		// 정렬된 결과를 담을 임시 배열 생성
 		int* sorted = (int*)malloc(sizeof(int) * maxSize);
 
-		// 원래 배열을 순회하면서 정렬된 결과를 임시 배열에 저장
-		for (int i = maxSize - 1; i >= 0; --i)
+		if (orderByASC)
 		{
-			sorted[count[ptr[i]] - 1] = ptr[i];
-			count[ptr[i]]--;
-			SortUpdateWindowTick();
-		}
+			// 누적 빈도수 계산
+			for (int i = 1; i <= maxVal; ++i)
+			{
+				count[i] += count[i - 1];
+				SortUpdateWindowTick();
+			}
 
+			// 원래 배열을 순회하면서 정렬된 결과를 임시 배열에 저장
+			for (int i = maxSize - 1; i >= 0; --i)
+			{
+				sorted[count[ptr[i]] - 1] = ptr[i];
+				count[ptr[i]]--;
+				SortUpdateWindowTick();
+			}
+		}
+		else
+		{
+			int index = 0;
+
+			// 원래 배열을 순회하면서 정렬된 결과를 임시 배열에 저장
+			for (int i = maxVal; i >= 0; --i)
+			{
+				while (count[i] > 0)
+				{
+					sorted[index++] = i;
+					count[i]--;
+					SortUpdateWindowTick();
+				}
+			}
+		}
 		// 임시 배열의 내용을 원래 배열에 복사
 		for (int i = 0; i < maxSize; ++i)
 		{
 			ptr[i] = sorted[i];
 			SortUpdateWindowTick();
 		}
-
 		// 동적 할당한 메모리 해제
 		free(count);
 		free(sorted);
-
 		SortUpdateWindowTick();
 	}
 	g_endClock = clock();

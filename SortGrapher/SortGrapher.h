@@ -32,16 +32,16 @@ void DataSortFinish(int duration);
 
 void SetRandomDatasIntoArray(int*& ptr, int count);
 
-void selectionSort(int* ptr, int maxSize);
+void selectionSort(int* ptr, int maxSize, bool orderByASC);
 
-void bubbleSort(int* ptr, int maxSize);
+void bubbleSort(int* ptr, int maxSize, bool orderByASC);
 
-void insertionSort(int* ptr, int maxSize);
+void insertionSort(int* ptr, int maxSize, bool orderByASC);
 
-void mergeSort(int* ptr, int maxSize);
+void mergeSort(int* ptr, int maxSize, bool orderByASC);
 
-void quickSort(int* ptr, int maxSize);
+void quickSort(int* ptr, int maxSize, bool orderByASC);
 
-void shellSort(int* ptr, int maxSize);
+void shellSort(int* ptr, int maxSize, bool orderByASC);
 
-void countingSort(int* ptr, int maxSize);
+void countingSort(int* ptr, int maxSize, bool orderByASC);
