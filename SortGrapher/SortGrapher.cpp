@@ -748,53 +748,53 @@ void countingSort(int* ptr, int maxSize, bool orderByASC)
 	{
 		// 입력 데이터의 최대값 찾기
 		int maxVal = ptr[0];
+		int minVal = ptr[0];
 		for (int i = 1; i < maxSize; ++i)
 		{
 			if (ptr[i] > maxVal)
 			{
 				maxVal = ptr[i];
 			}
+			if (ptr[i] < minVal)
+			{
+				minVal = ptr[i];
+			}
 			SortUpdateWindowTick();
 		}
 
 		// 누적 빈도수 계산을 위한 배열 생성 및 초기화
-		int* count = (int*)calloc(maxVal + 1, sizeof(int));
+		int range = maxVal - minVal + 1;
+		int* count = (int*)calloc(range, sizeof(int));
 
 		// 입력 데이터의 빈도수 세기
 		for (int i = 0; i < maxSize; ++i)
 		{
-			count[ptr[i]]++;
+			count[ptr[i] - minVal]++;
 			SortUpdateWindowTick();
 		}
 		int* sorted = (int*)malloc(sizeof(int) * maxSize);
 
+		int index = 0;
+		// 원래 배열을 순회하면서 정렬된 결과를 임시 배열에 저장
 		if (orderByASC)
 		{
-			// 누적 빈도수 계산
-			for (int i = 1; i <= maxVal; ++i)
+			for (int i = 0; i < range; ++i)
 			{
-				count[i] += count[i - 1];
-				SortUpdateWindowTick();
-			}
-
-			// 원래 배열을 순회하면서 정렬된 결과를 임시 배열에 저장
-			for (int i = maxSize - 1; i >= 0; --i)
-			{
-				sorted[count[ptr[i]] - 1] = ptr[i];
-				count[ptr[i]]--;
-				SortUpdateWindowTick();
+				while (count[i] > 0)
+				{
+					sorted[index++] = i + minVal;
+					count[i]--;
+					SortUpdateWindowTick();
+				}
 			}
 		}
 		else
 		{
-			int index = 0;
-
-			// 원래 배열을 순회하면서 정렬된 결과를 임시 배열에 저장
-			for (int i = maxVal; i >= 0; --i)
+			for (int i = range - 1; i >= 0; --i)
 			{
 				while (count[i] > 0)
 				{
-					sorted[index++] = i;
+					sorted[index++] = i + minVal;
 					count[i]--;
 					SortUpdateWindowTick();
 				}
