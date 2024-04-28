@@ -447,13 +447,19 @@ void bubbleSort(int* ptr, int maxSize, bool orderByASC)
 		{
 			for (int i = 0; i < maxSize; ++i)
 			{
+				bool sorted = true;
 				for (int j = i + 1; j < maxSize; ++j)
 				{
 					if (ptr[j] < ptr[i])
 					{
 						SWAP(ptr[i], ptr[j]);
+						sorted = false;
 					}
 					SortUpdateWindowTick();
+				}
+				if (sorted)
+				{
+					break;
 				}
 			}
 		}
@@ -461,13 +467,19 @@ void bubbleSort(int* ptr, int maxSize, bool orderByASC)
 		{
 			for (int i = 0; i < maxSize; ++i)
 			{
+				bool sorted = true;
 				for (int j = i + 1; j < maxSize; ++j)
 				{
 					if (ptr[j] > ptr[i])
 					{
 						SWAP(ptr[i], ptr[j]);
+						sorted = false;
 					}
 					SortUpdateWindowTick();
+				}
+				if (sorted)
+				{
+					break;
 				}
 			}
 		}
@@ -676,12 +688,11 @@ void shellSort(int* ptr, int maxSize, bool orderByASC)
 	DataSortStarted();
 	g_startClock = clock();
 	{
+		// 셸 정렬에 사용할 간격 시퀀스 배열
+		int gaps[] = { 701, 301, 132, 57, 23, 10, 4, 1 };
+		int numGaps = sizeof(gaps) / sizeof(gaps[0]);
 		if (orderByASC)
 		{
-			// 셸 정렬에 사용할 간격 시퀀스 배열
-			int gaps[] = { 701, 301, 132, 57, 23, 10, 4, 1 };
-			int numGaps = sizeof(gaps) / sizeof(gaps[0]);
-
 			// 간격 시퀀스 배열을 순회하면서 정렬 수행
 			for (int g = 0; g < numGaps; ++g)
 			{
@@ -703,10 +714,6 @@ void shellSort(int* ptr, int maxSize, bool orderByASC)
 		}
 		else
 		{
-			// 셸 정렬에 사용할 간격 시퀀스 배열
-			int gaps[] = { 701, 301, 132, 57, 23, 10, 4, 1 };
-			int numGaps = sizeof(gaps) / sizeof(gaps[0]);
-
 			// 간격 시퀀스 배열을 순회하면서 정렬 수행
 			for (int g = 0; g < numGaps; ++g)
 			{
