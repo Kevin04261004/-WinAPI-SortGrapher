@@ -251,7 +251,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			SetRandomDatasIntoArray(data_ptr, dataSize);
 			break;
 		case ID_MENU_OPTION_START:
-			SetRandomDatasIntoArray(data_ptr, dataSize);
+			// SetRandomDatasIntoArray(data_ptr, dataSize);
 			switch (g_sortType)
 			{
 			case SELECTION_SORT:
