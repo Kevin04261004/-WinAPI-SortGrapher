@@ -222,6 +222,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		case ID_MENU_SORT_COUNTINGSORT:
 			g_sortType = COUNTING_SORT;
 			break;
+		case ID_MENU_SORT_HEAPSORT:
+			g_sortType = HEAP_SORT;
+			break;
 		case ID_MENU_OPTION_RESET_100:
 			dataSize = 100;
 			SetRandomDatasIntoArray(data_ptr, dataSize);
@@ -274,6 +277,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 				break;
 			case COUNTING_SORT:
 				sortingThread = std::thread(countingSort, data_ptr, dataSize, orderByASC);
+				break;
+			case HEAP_SORT:
+				sortingThread = std::thread(heapSort, data_ptr, dataSize, orderByASC);
 				break;
 			default:
 				break;
@@ -587,7 +593,7 @@ void merge(int* data, int f, int m, int l, int size, bool orderByASC)
 	{
 		while (first1 <= last1 && first2 <= last2)
 		{
-			if (data[first1] >= data[first2])
+			if (data[first1] > data[first2])
 			{
 				sorted[index++] = data[first1++];
 			}
@@ -809,6 +815,78 @@ void countingSort(int* ptr, int maxSize, bool orderByASC)
 		// 동적 할당한 메모리 해제
 		free(count);
 		free(sorted);
+		SortUpdateWindowTick();
+	}
+	g_endClock = clock();
+	double duration = g_endClock - g_startClock;
+	DataSortFinish(duration);
+}
+
+/* 힙 정렬 */
+void HeapifyDown(int* ptr, int current, int size, bool orderByASC) {
+	int leftChild = 2 * current + 1;
+	int rightChild = 2 * current + 2;
+	int largest = current;
+
+	if (orderByASC) {
+		if (leftChild < size && ptr[leftChild] > ptr[largest]) {
+			largest = leftChild;
+		}
+
+		if (rightChild < size && ptr[rightChild] > ptr[largest]) {
+			largest = rightChild;
+		}
+	}
+	else {
+		if (leftChild < size && ptr[leftChild] < ptr[largest]) {
+			largest = leftChild;
+		}
+
+		if (rightChild < size && ptr[rightChild] < ptr[largest]) {
+			largest = rightChild;
+		}
+	}
+
+	if (largest != current) {
+		SWAP(ptr[current], ptr[largest]);
+		SortUpdateWindowTick();
+		HeapifyDown(ptr, largest, size, orderByASC);
+	}
+}
+
+void HeapifyUp(int* ptr, int current, bool orderByASC) {
+	int parent = (current - 1) / 2;
+
+	if (orderByASC) {
+		if (parent >= 0 && ptr[current] > ptr[parent]) {
+			SWAP(ptr[current], ptr[parent]);
+			SortUpdateWindowTick();
+			HeapifyUp(ptr, parent, orderByASC);
+		}
+	}
+	else {
+		if (parent >= 0 && ptr[current] < ptr[parent]) {
+			SWAP(ptr[current], ptr[parent]);
+			SortUpdateWindowTick();
+			HeapifyUp(ptr, parent, orderByASC);
+		}
+	}
+}
+
+void heapSort(int* ptr, int size, bool orderByASC)
+{
+	DataSortStarted();
+	g_startClock = clock();
+	{
+		for (int i = size / 2 - 1; i >= 0; i--) {
+			HeapifyDown(ptr, i, size, orderByASC);
+		}
+
+		for (int i = size - 1; i > 0; i--) {
+			SWAP(ptr[0], ptr[i]);
+			SortUpdateWindowTick();
+			HeapifyDown(ptr, 0, i, orderByASC);
+		}
 		SortUpdateWindowTick();
 	}
 	g_endClock = clock();

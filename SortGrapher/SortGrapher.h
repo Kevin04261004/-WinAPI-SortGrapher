@@ -16,6 +16,7 @@ typedef enum sort_type
 	QUICK_SORT,
 	SHELL_SORT,
 	COUNTING_SORT,
+	HEAP_SORT,
 } sort_type_t;
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
@@ -45,3 +46,5 @@ void quickSort(int* ptr, int maxSize, bool orderByASC);
 void shellSort(int* ptr, int maxSize, bool orderByASC);
 
 void countingSort(int* ptr, int maxSize, bool orderByASC);
+
+void heapSort(int* ptr, int maxSize, bool orderByASC);
